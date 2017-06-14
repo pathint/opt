@@ -85,11 +85,10 @@ end
 # Output: Minimum solution the objective function
 #..........................................................
 function Simplex(a, # tableau matrix for Ax=b with object function, c'*x 
-                 bases_original; # index vector for column basis vectors
+                 bases; # index vector for column basis vectors
                  iterations::Int64 = 128)
     m, n = size(a)
     b = a
-    bases = bases_original
     for k = 1:iterations
         r = b[m,1:n-1]
         q = SelectQ(r)
@@ -102,7 +101,8 @@ function Simplex(a, # tableau matrix for Ax=b with object function, c'*x
             return b, bases
         end
         b = PivotalTransform(b, p, q)
-        bases[p]=q
+        #WARNINING: ?? 
+        bases[p] = q
     end
     println("WARNING: ", iterations ," iterations have been exceeded.")
     return b, bases
@@ -141,17 +141,27 @@ function SimplexTwo(a, # A matrix in Ax = b
                     c, # c vector in object function, c'*x
                    )
     m, n = size(a)
+    # matrix transformation on the cost vector
     t = vcat(hcat(a, eye(m), b), 
              hcat(zeros(Float64, n)', ones(Float64, m)', [0.0]))
     t = vcat(hcat(eye(m), zeros(Float64, m)),
              hcat(-ones(Float64, m)', [1.0])) * t # tableau
-    t, bases = Simplex(t, ones(Int64, m))
-    bases = vcat(bases, setdiff(1:n,bases), m+n+1) # Delete auxiliary vectors
-    t = vcat(t[1:m,bases], hcat(c', [0.0])) # Shift basis vectors to left `m` columns
+    t, bases = Simplex(t, [i for i= n+1:n+m])
+    if abs(t[end,end]) >= eps() 
+        println("ERROR: no feasible solution is found!")
+        return t, bases
+    end
+    # the last column, m+n+1 is the solution
+    t = hcat(
+        vcat(t[1:m, 1:n], 
+               c'),
+        vcat(t[1:m, end],[0.0])
+        ) # Shift basis vectors to left `m` columns
     t = vcat(hcat(eye(m), zeros(Float64, m)),
              hcat(-c[1:m]', [1.0]))*t # Start tableau for 2nd phase
-    Simplex(t, ones(Int64, m))
+    Simplex(t, bases)
 end
+
 
 #...................................
 # Simple test cases
@@ -161,5 +171,11 @@ a = [4 2 -1   0;
      1 4  0  -1];
 b = [12, 6];
 c = [2, 3, 0, 0];
+SimplexTwo(a, b, c)
+
+a = [1 0 1;
+     0 1 1];
+b = [1, 2]
+c = [-1, -1, -3]
 SimplexTwo(a, b, c)
 
