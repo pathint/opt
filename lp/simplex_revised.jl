@@ -1,7 +1,7 @@
 ###########################################################
 #
 # Collection of Optimization/Search Algorithms
-# Revised Simplex Algorithm for Linear Programming
+# Revisied Simplex Algorithm for Linear Programming
 # Xianlong Wang, Ph.D.
 # Wang.Xianlong@139.com
 # *** FOR TEACHING PURPOSE ONLY ***
@@ -70,10 +70,10 @@ function SelectP(x0, xq)
 end
 
 #..........................................................
-# Revised Simplex Algorithm for Linear Programming given an initial tableau 
+# Revisied Simplex Algorithm for Linear Programming given an initial tableau 
 # Input: tableau matrix (A) for the initial basic feasible solution
 #        basis block (B), initial feasible solution (x)
-#        and cost vector (
+#        and cost vector (c) ... 
 # Output: Minimum solution the objective function
 # Note: extra input and output arguments are for the 2-phase algorithm
 #..........................................................
@@ -82,7 +82,6 @@ function Simplex(A, # tableau
                  x, # b vector in Ax = b,
                  c, # c vector in object function, c'*x
                  baseB, baseD; # index vector for column basis vectors
-                 verbose = false,
                  iterations::Int64 = 128)
     m, n = size(A)
     for k = 1:iterations
@@ -104,16 +103,10 @@ function Simplex(A, # tableau
         B = PivotalTransform(hcat(B, x, xq), p, m+2)
         x = B[:, m+1]
         B = B[:, 1:m]
+        println("B = ", B)
         temp = baseB[p]
         baseB[p] = baseD[q] # Basis exchange
         baseD[q] = temp
-        if verbose
-            println("Step ", k)
-            println("B^-1 = ", B)
-            println("x    = ", x)
-            println("Basis= ", baseB)
-            println("Other= ", baseD)
-        end
     end
     println("WARNING: ", iterations ," iterations have been exceeded.")
     return B, x, baseB, baseD
@@ -123,7 +116,6 @@ function Simplex(A, # A matrix in Ax = b, should be a tableau
                  b, # b vector in Ax = b,
                  c, # c vector in object function, c'*x
                  bases; # index vector for column basis vectors
-                 verbose = false,
                  iterations::Int64 = 128)
     m, n = size(A)
     if m != length(bases)
@@ -132,11 +124,7 @@ function Simplex(A, # A matrix in Ax = b, should be a tableau
     end
     baseB = bases
     baseD = setdiff(1:n, bases)
-    if verbose 
-        println("Original Basis  = ", baseB)
-        println("Original Other  = ", baseD)
-    end
-    Simplex(A, eye(Float64, m), b, c, baseB, baseD, verbose = verbose, iterations = iterations)
+    Simplex(A, eye(Float64, m), b, c, baseB, baseD, iterations = iterations)
 end
 
 
@@ -149,7 +137,7 @@ a = [1 5 1 0 0;
      1 1 0 0 1];
 b = [40, 20, 12];
 c = [-3, -5, 0, 0, 0];
-Simplex(a, b, c, [3, 4, 5], verbose=true)
+Simplex(a, b, c, [3, 4, 5])
 
 # Reference Solution:
 # Minimum cost = -50.0
@@ -204,33 +192,16 @@ Simplex(a[:, 1:4], Bi, x0, c, bB, bD)
 function SimplexTwo(a, # A matrix in Ax = b 
                     b, # b vector in Ax = b,
                     c; # c vector in object function, c'*x
-                    verbose = false,
-                    iterations::Int64 = 128)
+                    iterations::Int64 = 128
+                   )
     m, n = size(a)
     #Phase 1
-    if verbose
-        println("Start Phase I ...")
-    end
     Bi, x0, bB, bD=Simplex(hcat(a, eye(Float64, m)), 
                            b, 
                            vcat(zeros(Float64, n), ones(Float64, m)),
-                           [i for i=n+1:n+m], 
-                           verbose = verbose, 
-                           iterations = iterations)
-    if verbose
-        println("Done with Phase I.\n")
-        println("Basis Vectors: ", bB)
-        println("Other Vectors: ", bD)
-        println("Init Solution: ", x0)
-        println("\nStart Phase II ...")
-    end
-    bD = setdiff(bD, n+1:n+m)
-    if length(bD) != n-m
-        println("ERROR: Basis vectors include some auxilary vector(s)!")
-        return Bi, x0, bB, bD
-    end
+                           [i for i=n+1:n+m])
     # Phase 2
-    Simplex(a, Bi, x0, c, bB, bD, verbose = verbose, iterations = iterations)
+    Simplex(a, Bi, x0, c, bB, setdiff(bD, n+1:n+m))
 end
 
 #...................................
@@ -241,9 +212,8 @@ a = [4 2 -1  0;
      1 4  0 -1];
 b = [12, 6];
 c = [2, 3, 0, 0];
-SimplexTwo(a, b, c, verbose = true)
+SimplexTwo(a, b, c)
 
-# Reference Solution
 # Minimum cost = 7.714285714285714
 # ([0.285714 -0.142857; -0.0714286 0.285714], [2.57143, 0.857143], [1, 2], [3, 4])
 
@@ -251,10 +221,5 @@ a = [1 1 1 0 0;
      5 3 0 -1 1];
 b = [4, 8];
 c = [-3, -5, 0, 0, 0];
-SimplexTwo(a, b, c, verbose = true)
-
-# Reference Solution
-#Minimum cost = -20.0
-#([3.0 -1.0; 1.0 0.0], [4.0, 4.0], [4, 2], [1, 3, 5])
-
+SimplexTwo(a, b, c)
 
