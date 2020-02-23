@@ -163,7 +163,7 @@ FibonacciSection(x->x^2/2 - sin(x), -20, 20, eps())
 # Output: minimmum point and value
 #..........................................................
 
-function BinarySection(f, f1, l0, u0, accuracy)
+function BinarySection(f, g, l0, u0, accuracy)
     if l0 >= u0
         #println("WARNING: Two bounds have been interchanged!")
         u = l0
@@ -174,11 +174,12 @@ function BinarySection(f, f1, l0, u0, accuracy)
     end
     maxIter = ceil(log2((u-l)/abs(accuracy)))
     m = (l + u)/2
+    epsilon = eps(Float32)
     for i = 1: maxIter
-        f1m = f1(m)
-        if f1m == 0 # WARNING: OK??
+        gm = g(m)
+        if abs(gm) <=  epsilon
             return m, f(m)
-        elseif f1m >0
+        elseif gm >0
             u = m
         else
             l = m
