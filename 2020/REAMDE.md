@@ -1,3 +1,3 @@
 # Julia code for Introduction to Optimization Algorithms
 
-Details come later.
+Details will come later.
